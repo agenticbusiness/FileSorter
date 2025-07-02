@@ -21,6 +21,8 @@ try:
     import pdf2image
     import fitz  # PyMuPDF
     import pandas as pd
+    from change_logger import log_change, configure_log_file_path # Import for change logging
+    import config # Import config to access CHANGE_LOG_FILE
 except ImportError as e:
     print(f"Missing required package: {e}")
     print("Please install required packages with: pip install -r requirements.txt")
@@ -247,6 +249,7 @@ class PDFMetadataExtractor:
             writer = csv.DictWriter(f, fieldnames=self.company_headers)
             writer.writeheader()
             writer.writerows(companies)
+        log_change(str(company_file), f"Created/updated company data with {len(companies)} records.")
         logger.info(f"Companies saved to: {company_file}")
         
         # Save contacts
@@ -255,6 +258,7 @@ class PDFMetadataExtractor:
             writer = csv.DictWriter(f, fieldnames=self.contact_headers)
             writer.writeheader()
             writer.writerows(contacts)
+        log_change(str(contact_file), f"Created/updated contact data with {len(contacts)} records.")
         logger.info(f"Contacts saved to: {contact_file}")
         
         return company_file, contact_file
@@ -311,12 +315,21 @@ class PDFMetadataExtractor:
 def main():
     """Main entry point"""
     # Configuration
-    FOLDER_IN = r"C:\Users\brenn\n8n-docker\upload-to-n8n-Waiting"
-    FOLDER_OUT = r"C:\Users\brenn\n8n-docker\upload-to-n8n-Waiting"
+    # Use FOLDER_OUT from config.py for consistency
+    # FOLDER_IN = r"C:\Users\brenn\n8n-docker\upload-to-n8n-Waiting"
     
     try:
-        extractor = PDFMetadataExtractor(FOLDER_IN, FOLDER_OUT)
-        extractor.process_pdfs(limit=5)
+        # Configure the change logger with the path from config.py
+        if hasattr(config, 'CHANGE_LOG_FILE'):
+            configure_log_file_path(config.CHANGE_LOG_FILE)
+        else:
+            # Fallback if CHANGE_LOG_FILE is not in config for some reason
+            logger.warning("CHANGE_LOG_FILE not found in config.py. Using default log path.")
+            # The change_logger will use its internal default or a local file.
+            pass
+
+        extractor = PDFMetadataExtractor(config.FOLDER_IN, config.FOLDER_OUT)
+        extractor.process_pdfs(limit=config.MAX_PDFS if hasattr(config, 'MAX_PDFS') else 5)
     except Exception as e:
         logger.error(f"Fatal error: {e}")
         sys.exit(1)

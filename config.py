@@ -75,3 +75,10 @@ REGEX_PATTERNS = {
 # CSV field headers for company records
 COMPANY_HEADERS = [
     'Company_Name
+
+# ====================
+# LOGGING CONFIGURATION
+# ====================
+
+# Path for the change log file
+CHANGE_LOG_FILE = os.path.join(FOLDER_OUT, "change_log.txt")
